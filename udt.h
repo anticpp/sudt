@@ -1,6 +1,14 @@
-#ifndef SIMPLE_UDT_H
-#define SIMPLE_UDT_H
+/**
+ * @file udt.h
+ * @brief 
+ * @author supergui@live.cn
+ * @version 1.0.0
+ * @date 2018-01-24
+ */
+#ifndef SIMPLE_UDT_20180124_H
+#define SIMPLE_UDT_20180124_H
 
+#include <unistd.h>
 
 typedef struct {
     char data[1];

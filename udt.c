@@ -1,4 +1,12 @@
+/**
+ * @file udt.c
+ * @brief 
+ * @author supergui@live.cn
+ * @version 1.0.0
+ * @date 2018-01-24
+ */
 #include "udt.h"
+#include <stdlib.h>
 
 typedef struct {
     int fd;
