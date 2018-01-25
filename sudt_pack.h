@@ -16,6 +16,10 @@
 #define SUDT_PACK_FLAG_PUSH (0x01<<3)
 #define SUDT_PACK_FLAG_ACK (0x01<<4)
 
+#define SUDT_PACK_DATA_MEM_TYPE_DEFAULT 0x00
+#define SUDT_PACK_DATA_MEM_TYPE_STACK 0x01
+#define SUDT_PACK_DATA_MEM_TYPE_HEAP 0x02
+
 typedef struct {
     uint32_t seq;
     uint32_t ack;
@@ -25,10 +29,15 @@ typedef struct {
     uint32_t datalen;
     void *data;
     
+    // Memory type
+    int data_mem_type;
+    
     // Remote socket address which received
     struct sockaddr addr;
     socklen_t addrlen;
 } sudt_pack_t;
+
+void sudt_pack_reset(sudt_pack_t *pack);
 
 size_t sudt_pack_encode_need_size(const sudt_pack_t *pack);
 

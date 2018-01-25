@@ -21,15 +21,15 @@ typedef struct {
     int state;
 
     socklen_t local_addrlen, remote_addrlen;
-    struct sockaddr local_addr, remote_addr; } sudt_socket_internal_t;
+    struct sockaddr local_addr, remote_addr; 
+} sudt_socket_internal_t;
 
-void sudt_socket_pack_read(sudt_socket_internal_t *sock, sudt_pack_t *pack) {
+int sudt_socket_pack_read(sudt_socket_internal_t *sock, sudt_pack_t *pack) {
     char buf[2048];
-    pack->addrlen = sizeof(pack->addr);
 
     ssize_t s = 0;
     for(;;) {
-        s = recvfrom(sock->fd, buf, sizeof(buf), 0, &pack->addr, &(pack->addrlen));
+        s = recvfrom(sock->fd, buf, sizeof(buf), 0, &(pack->addr), &(pack->addrlen));
         if(s<0) {
             continue;
         }
@@ -42,21 +42,24 @@ void sudt_socket_pack_read(sudt_socket_internal_t *sock, sudt_pack_t *pack) {
         break;
     }
     
-    return;
+    return 0;
 }
 
-void sudt_socket_pack_write(sudt_socket_internal_t *sock, const sudt_pack_t *pack){
+int sudt_socket_pack_write(sudt_socket_internal_t *sock, const sudt_pack_t *pack) {
     size_t s = sudt_pack_encode_need_size(pack);
     char *buf = malloc(s);
 
-    size_t s1 = sudt_pack_encode(pack, buf, sizeof(buf));
+    if( sudt_pack_encode(pack, buf, sizeof(buf))!=s ) {
+        return -1;
+    }
+
     for(;;) {
-        if( sendto(sock->fd, buf, s1, 0, &(sock->remote_addr), sizeof(sock->remote_addr)) <0 ){
+        if( sendto(sock->fd, buf, s, 0, &(sock->remote_addr), sizeof(sock->remote_addr)) <0 ) {
             continue;
         }
         break;
     }
-    return;
+    return 0;
 }
 
 sudt_socket_t* sudt_socket_create() {
@@ -73,7 +76,7 @@ sudt_socket_t* sudt_socket_create() {
 
 int sudt_socket_connect(sudt_socket_t *sock, const struct sockaddr *addr, socklen_t addrlen) {
     sudt_socket_internal_t *isock = (sudt_socket_internal_t *)sock;
-    sudt_pack_t sync, ack;
+    sudt_pack_t pack;
 
     // Connect with socket type SOCK_DGRAM, which datagrams are sent by default address,
     // and only address from which are received.
@@ -88,11 +91,25 @@ int sudt_socket_connect(sudt_socket_t *sock, const struct sockaddr *addr, sockle
     isock->remote_addrlen = addrlen;
 
     // SYNC
-    sync.flags = SUDT_PACK_FLAG_SYNC; 
-    sudt_socket_pack_write(isock, &sync);
+    sudt_pack_reset(&pack);
+    pack.flags = SUDT_PACK_FLAG_SYNC; 
+    if( sudt_socket_pack_write(isock, &pack)<0 ) {
+        return -1;
+    }
 
-    sudt_socket_pack_read(isock, &ack);
-    if( !(ack.flags&SUDT_PACK_FLAG_ACK) ) {
+    // SYNC & ACK
+    sudt_pack_reset(&pack);
+    if( sudt_socket_pack_read(isock, &pack)<0 ) {
+        return -1;
+    }
+    if( !(pack.flags&SUDT_PACK_FLAG_SYNC) || !(pack.flags&SUDT_PACK_FLAG_ACK) ) {
+        return -1;
+    }
+
+    // ACK
+    sudt_pack_reset(&pack);
+    pack.flags = SUDT_PACK_FLAG_ACK;
+    if( sudt_socket_pack_write(isock, &ack2)<0 ) {
         return -1;
     }
 

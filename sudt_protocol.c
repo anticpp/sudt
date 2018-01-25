@@ -86,7 +86,7 @@ size_t sudt_protocol_decode_uint32(const void *buf, size_t buflen, uint32_t *pi)
     return sizeof(uint32_t);
 }
 
-size_t sudt_protocol_decode_data(const void *buf, size_t buflen, void *data, size_t datalen) {
+size_t sudt_protocol_decode_data(const void *buf, size_t buflen, void *data, size_t *datalen) {
     if(buflen<datalen) {
         return 0;
     }
